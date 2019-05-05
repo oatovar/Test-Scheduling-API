@@ -1,0 +1,592 @@
+openapi: 3.0.0
+info:
+  title: Environmental Test Scheduling API
+  description: API for the environmental test scheduling application.
+  contact:
+    email: you@your-company.com
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  version: 1.0.1
+servers:
+- url: https://api.testscheduler.com
+  description: API
+tags:
+- name: Admin Endpoints
+  description: API functionality restricted to Admins only.
+- name: Manager Endpoints
+  description: API functionality restricted to managers only.
+- name: Requestor Endpoints
+  description: API functionality available to everyone.
+paths:
+  /requests:
+    get:
+      tags:
+      - Requestor Endpoints
+      - Manager Endpoints
+      - Admin Endpoints
+      summary: Retrieves multiple work requests.
+      description: |
+        You can use this endpoint to filter down the work requests you would like to retrieve.
+      operationId: searchWorkRequests
+      parameters:
+      - name: requestor
+        in: query
+        description: Narrows down work requests using the name of the requestor. If
+          the requestor is not specified, the application will automatically load
+          in the first 10 work requests.
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: string
+      - name: chargecode
+        in: query
+        description: Narrows down work requests using the chargecode used.
+        required: false
+        style: form
+        explode: true
+        schema:
+          minimum: 0
+          type: integer
+          format: int32
+      - name: $limit
+        in: query
+        description: maximum number of records to return
+        required: false
+        style: form
+        explode: true
+        schema:
+          maximum: 50
+          minimum: 0
+          type: integer
+          format: int32
+      - name: tool
+        in: query
+        description: Narrows down work requests using the tool
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: string
+      - name: status
+        in: query
+        description: Narrows down work requests using the status
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: string
+      - name: testlocation
+        in: query
+        description: Narrows down work requests using the testlocation
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: string
+      - name: driver
+        in: query
+        description: Narrows down work requests using the driver
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: search results matching criteria
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Requests'
+        400:
+          description: bad input parameter
+    put:
+      tags:
+      - Admin Endpoints
+      - Manager Endpoints
+      summary: This endpoint is used to completely replace a work request.
+      description: Updates a work request within the system.
+      operationId: approveWorkRequest
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Requests'
+      responses:
+        200:
+          description: Item updated successfully.
+        404:
+          description: Invalid Work Request id.
+    post:
+      tags:
+      - Requestor Endpoints
+      summary: Adds a work request.
+      description: Adds a work request to the system.
+      operationId: addWorkRequest
+      requestBody:
+        $ref: '#/components/requestBodies/Requests'
+      responses:
+        201:
+          description: Work Request created.
+        500:
+          description: There was an error with the format of the request.
+    patch:
+      tags:
+      - Admin Endpoints
+      - Manager Endpoints
+      summary: This will update or add a field to a request.
+      description: Partially updates a work request within the system
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Requests'
+      responses:
+        201:
+          description: Request updated successfully
+        400:
+          description: The request was invalid. The response will contain a list of
+            errors.
+  /requests/{work_request_id}/:
+    delete:
+      tags:
+      - Requestor Endpoints
+      summary: This endpoint allows for the removal of work requests.
+      description: It's main functionality is for the removal of draft work requests.
+      operationId: removeWorkRequest
+      parameters:
+      - name: work_request_id
+        in: path
+        description: This is the work request id that will be deleted.
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+          example: 5c5b7bc5a11f9e34724530cb
+      responses:
+        200:
+          description: Work Request deleted.
+        404:
+          description: Invalid Work Request id.
+  /tasks:
+    get:
+      tags:
+      - Requestor Endpoints
+      summary: This api request allows for the retrieval of work request tasks.
+      description: It's main functioanlity is to retrieve the tasks associated with
+        work requests.
+      operationId: retrieveTasks
+      parameters:
+      - name: taskId
+        in: query
+        description: This is the task id that will be retrieved.
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: string
+          example: a1b2c9384
+      responses:
+        200:
+          description: Successfully found task request.
+        404:
+          description: Invalid Task Id.
+    put:
+      tags:
+      - Admin Endpoints
+      - Manager Endpoints
+      summary: This api call allows for the approval of work request tasks.
+      description: This api call requires the usage of the work request api to retrieve
+        the task ids.
+      operationId: approveTasks
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Tasks'
+      responses:
+        201:
+          description: Successfully update/approved task.
+        500:
+          description: Invalid data/format submitted.
+    post:
+      tags:
+      - Requestor Endpoints
+      summary: This api request allows for the creation of work request tasks.
+      description: Its main functionality is to create tasks that will be associate
+        with a work request.
+      operationId: createTasks
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Tasks'
+      responses:
+        201:
+          description: Successfully created task.
+        500:
+          description: Invalid data/format submitted.
+  /tasks/{task_id}/:
+    get:
+      tags:
+      - Requestor Endpoints
+      summary: This allows dropdown menu selection for groups
+      parameters:
+      - name: task_id
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+          example: a1b2c9384
+      - name: _id
+        in: query
+        required: false
+        style: form
+        explode: true
+        schema:
+          description: Group not found
+      responses:
+        200:
+          description: Success
+        404:
+          description: Error
+    post:
+      tags:
+      - Admin Endpoints
+      summary: This allows post for groups
+      parameters:
+      - name: task_id
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+          example: a1b2c9384
+      - name: _id
+        in: query
+        required: true
+        style: form
+        explode: true
+        schema:
+          type: string
+          example: 5c80345221b11
+      responses:
+        200:
+          description: success
+        404:
+          description: Error
+    delete:
+      tags:
+      - Requestor Endpoints
+      summary: This api call allows for the deletion of work request tasks.
+      description: Its main purpose is the removal of draft tasks.
+      operationId: removeTasks
+      parameters:
+      - name: task_id
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+          example: a1b2c9384
+      responses:
+        200:
+          description: Work Request deleted.
+        404:
+          description: Invalid Work Request id.
+  /tools:
+    get:
+      tags:
+      - Requestor Endpoints
+      summary: This allows dropdown menu selection for toolss
+      parameters:
+      - name: _id
+        in: query
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: string
+          example: 5c80345221b11
+      responses:
+        200:
+          description: Found tool
+        404:
+          description: Tool not found
+    post:
+      tags:
+      - Admin Endpoints
+      summary: This allows post for tools
+      parameters:
+      - name: _id
+        in: query
+        required: true
+        style: form
+        explode: true
+        schema:
+          type: string
+          example: 5c80345221b11
+      responses:
+        200:
+          description: success
+        404:
+          description: Error
+    delete:
+      tags:
+      - Admin Endpoints
+      summary: This allows delete for tools
+      parameters:
+      - name: _id
+        in: query
+        required: true
+        style: form
+        explode: true
+        schema:
+          type: string
+          example: 5c80345221b11
+      responses:
+        200:
+          description: success
+        404:
+          description: Error
+  /priority:
+    get:
+      tags:
+      - Requestor Endpoints
+      summary: This allows dropdown menu selection for priority
+      parameters:
+      - name: _id
+        in: query
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: string
+          example: 5c80345221b11
+      responses:
+        200:
+          description: Found priority
+        404:
+          description: Priority not found
+    post:
+      tags:
+      - Admin Endpoints
+      summary: This allows post for prioritys
+      parameters:
+      - name: _id
+        in: query
+        required: true
+        style: form
+        explode: true
+        schema:
+          type: string
+          example: 5c80345221b11
+      responses:
+        200:
+          description: success
+        404:
+          description: Error
+    delete:
+      tags:
+      - Admin Endpoints
+      summary: This allows delete for priorities
+      parameters:
+      - name: _id
+        in: query
+        required: true
+        style: form
+        explode: true
+        schema:
+          type: string
+          example: 5c80345221b11
+      responses:
+        200:
+          description: success
+        404:
+          description: Error
+  /pslcompanies:
+    get:
+      tags:
+      - Requestor Endpoints
+      summary: This allows dropdown menu selection for pslcompaniess
+      parameters:
+      - name: _id
+        in: query
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: string
+          example: 5c80345221b11
+      responses:
+        200:
+          description: Found psl/company
+        404:
+          description: PSL/company not found
+    post:
+      tags:
+      - Admin Endpoints
+      summary: This allows post for psl/companies
+      parameters:
+      - name: _id
+        in: query
+        required: true
+        style: form
+        explode: true
+        schema:
+          type: string
+          example: 5c80345221b11
+      responses:
+        200:
+          description: success
+        404:
+          description: Error
+    delete:
+      tags:
+      - Admin Endpoints
+      summary: This allows delete for psl/companies
+      parameters:
+      - name: _id
+        in: query
+        required: true
+        style: form
+        explode: true
+        schema:
+          type: string
+          example: 5c80345221b11
+      responses:
+        200:
+          description: success
+        404:
+          description: Error
+  /search:
+    get:
+      tags:
+      - Admin Endpoints
+      - Manager Endpoints
+      - Requestor Endpoints
+      summary: This allows for the ability to search for various tasks and requests
+      parameters:
+      - name: search
+        in: query
+        required: true
+        style: form
+        explode: true
+        schema:
+          type: string
+          example: abc1234
+      responses:
+        200:
+          description: Will have a JSON response with the results that contained the
+            keyword
+components:
+  schemas:
+    Requests:
+      required:
+      - chargecode
+      - description
+      - driver
+      - requestcomments
+      - requestor
+      - status
+      - tasks
+      - testlocation
+      - tool
+      type: object
+      properties:
+        requestor:
+          type: string
+        chargecode:
+          type: integer
+          format: i32
+        description:
+          type: string
+        tool:
+          type: string
+        tasks:
+          minItems: 1
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+        testlocation:
+          type: string
+        driver:
+          type: string
+        requestcomments:
+          type: string
+    Tasks:
+      required:
+      - companyPSL
+      - duration
+      - enddate
+      - group
+      - links
+      - priority
+      - resource
+      - schedule
+      - startdate
+      - taskid
+      - testContact
+      - testdata
+      - testdescription
+      - testlog
+      - testresource
+      type: object
+      properties:
+        testdescription:
+          type: string
+        resource:
+          type: string
+        priority:
+          type: string
+        group:
+          type: string
+        testContact:
+          type: string
+        companyPSL:
+          type: string
+        duration:
+          type: string
+        tool:
+          type: string
+        taskid:
+          type: string
+        testresource:
+          type: string
+        startdate:
+          type: string
+          format: date
+        enddate:
+          type: string
+          format: date
+        schedule:
+          type: integer
+          example: 4
+        status:
+          type: string
+          description: 'Can be one of the following: pending, approved, denied, draft.'
+          enum:
+          - approved
+          - closed
+          - pending
+          - denied
+          - draft
+  requestBodies:
+    Requests:
+      description: A JSON object containing work request information.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Requests'
+      required: true
